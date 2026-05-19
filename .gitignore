@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+.open-figma-mcp/
+.figma-plugin-mcp/
+npm-debug.log*

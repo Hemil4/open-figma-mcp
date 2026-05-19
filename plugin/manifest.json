@@ -1,0 +1,13 @@
+{
+  "name": "Open Figma MCP",
+  "id": "open-figma-mcp-local",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "src/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Development plugin for a local Open Figma MCP bridge. The bridge defaults to 127.0.0.1:18765 and should not be exposed publicly."
+  }
+}

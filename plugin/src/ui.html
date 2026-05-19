@@ -1,0 +1,295 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font: 12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #18181b;
+        background: #ffffff;
+      }
+
+      main {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .topbar,
+      .compact {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 8px;
+      }
+
+      .mark {
+        display: grid;
+        width: 22px;
+        height: 22px;
+        place-items: center;
+        border-radius: 5px;
+        background: #18181b;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        overflow: hidden;
+        font-size: 12px;
+        font-weight: 650;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        gap: 6px;
+        padding: 0 8px;
+        border: 1px solid #e4e4e7;
+        border-radius: 999px;
+        background: #fafafa;
+        color: #52525b;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: #dc2626;
+      }
+
+      .dot.connected {
+        background: #16a34a;
+      }
+
+      .panel {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        padding: 8px;
+        border: 1px solid #e4e4e7;
+        border-radius: 7px;
+        background: #fafafa;
+      }
+
+      code {
+        overflow: hidden;
+        color: #52525b;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10.5px;
+        line-height: 15px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #detail {
+        overflow: hidden;
+        color: #71717a;
+        font-size: 11px;
+        line-height: 15px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 32px;
+        gap: 8px;
+      }
+
+      button {
+        height: 30px;
+        border: 1px solid #d4d4d8;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #18181b;
+        font: inherit;
+      }
+
+      button:active {
+        background: #f4f4f5;
+      }
+
+      .icon-button {
+        width: 32px;
+        padding: 0;
+        font-size: 14px;
+        line-height: 1;
+      }
+
+      .compact {
+        display: none;
+        height: 48px;
+        padding: 9px 10px;
+      }
+
+      body.collapsed main {
+        display: none;
+      }
+
+      body.collapsed .compact {
+        display: flex;
+      }
+
+      body.collapsed .status {
+        max-width: 118px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="topbar">
+        <div class="brand">
+          <div class="mark">O</div>
+          <h1>Open Figma MCP</h1>
+        </div>
+        <div class="status">
+          <span id="dot" class="dot"></span>
+          <span id="label">Disconnected</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <code id="endpoint">ws://127.0.0.1:18765/ws</code>
+        <span id="detail">Start the MCP server, then reconnect.</span>
+      </div>
+
+      <div class="actions">
+        <button id="connect">Reconnect</button>
+        <button id="minimize" class="icon-button" title="Minimize">-</button>
+      </div>
+    </main>
+
+    <div class="compact">
+      <div class="brand">
+        <div class="mark">O</div>
+        <div class="status">
+          <span id="compact-dot" class="dot"></span>
+          <span id="compact-label">Disconnected</span>
+        </div>
+      </div>
+      <button id="expand" class="icon-button" title="Expand">+</button>
+    </div>
+
+    <script>
+      let socket;
+      let reconnectTimer;
+      let collapsed = false;
+
+      const expandedSize = { width: 280, height: 156 };
+      const collapsedSize = { width: 220, height: 48 };
+      const host = "127.0.0.1";
+      const port = "18765";
+      const endpoint = `ws://${host}:${port}/ws`;
+      const healthEndpoint = `http://${host}:${port}/health`;
+      const dot = document.getElementById("dot");
+      const label = document.getElementById("label");
+      const compactDot = document.getElementById("compact-dot");
+      const compactLabel = document.getElementById("compact-label");
+      const detail = document.getElementById("detail");
+      const connectButton = document.getElementById("connect");
+      const minimizeButton = document.getElementById("minimize");
+      const expandButton = document.getElementById("expand");
+      document.getElementById("endpoint").textContent = endpoint;
+
+      function resize(size) {
+        parent.postMessage({ pluginMessage: { type: "resize-ui", width: size.width, height: size.height } }, "*");
+      }
+
+      function setCollapsed(next) {
+        collapsed = next;
+        document.body.classList.toggle("collapsed", collapsed);
+        resize(collapsed ? collapsedSize : expandedSize);
+      }
+
+      function setConnected(connected, message) {
+        const statusText = connected ? "Connected" : "Disconnected";
+        dot.className = connected ? "dot connected" : "dot";
+        compactDot.className = connected ? "dot connected" : "dot";
+        label.textContent = statusText;
+        compactLabel.textContent = statusText;
+        detail.textContent = message || (connected ? "Bridge ready." : "Start the MCP server, then reconnect.");
+      }
+
+      function connect() {
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = undefined;
+        }
+
+        if (socket) {
+          socket.onclose = null;
+          socket.close();
+        }
+
+        setConnected(false, `Opening ${endpoint}...`);
+        openSocket();
+      }
+
+      function openSocket() {
+        const ws = new WebSocket(endpoint);
+        socket = ws;
+
+        ws.onopen = () => {
+          setConnected(true);
+          parent.postMessage({ pluginMessage: { type: "ui-ready" } }, "*");
+          fetch(healthEndpoint).catch(() => {});
+        };
+
+        ws.onclose = () => {
+          if (socket !== ws) return;
+          socket = undefined;
+          setConnected(false, "Bridge closed. Retrying...");
+          reconnectTimer = setTimeout(openSocket, 1500);
+        };
+
+        ws.onerror = () => {
+          setConnected(false, "Bridge not running.");
+        };
+
+        ws.onmessage = (event) => {
+          let request;
+          try {
+            request = JSON.parse(event.data);
+          } catch {
+            return;
+          }
+          parent.postMessage({ pluginMessage: request }, "*");
+        };
+      }
+
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify(message));
+        }
+      };
+
+      connectButton.onclick = connect;
+      minimizeButton.onclick = () => setCollapsed(true);
+      expandButton.onclick = () => setCollapsed(false);
+      resize(expandedSize);
+      connect();
+    </script>
+  </body>
+</html>
