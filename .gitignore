@@ -1,5 +1,8 @@
 node_modules/
+server/dist/
+plugin/dist/
 .DS_Store
 .open-figma-mcp/
 .figma-plugin-mcp/
 npm-debug.log*
+*.log
