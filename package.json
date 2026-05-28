@@ -1,17 +1,16 @@
 {
   "name": "open-figma-mcp",
   "version": "0.1.0",
-  "private": true,
   "description": "Open-source Figma MCP server with full read/write access via a local plugin bridge — no Figma REST API, no rate limits.",
   "license": "MIT",
   "author": "Hemil Patel",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hemilpatel/open-figma-mcp.git"
+    "url": "https://github.com/Hemil4/open-figma-mcp.git"
   },
-  "homepage": "https://github.com/hemilpatel/open-figma-mcp#readme",
+  "homepage": "https://github.com/Hemil4/open-figma-mcp#readme",
   "bugs": {
-    "url": "https://github.com/hemilpatel/open-figma-mcp/issues"
+    "url": "https://github.com/Hemil4/open-figma-mcp/issues"
   },
   "keywords": [
     "figma",
@@ -28,6 +27,14 @@
     "node": ">=18"
   },
   "type": "module",
+  "files": [
+    "server/dist",
+    "plugin/dist",
+    "plugin/manifest.json",
+    "plugin/src/ui.html",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "open-figma-mcp": "server/dist/index.js",
     "figma-plugin-mcp": "server/dist/index.js"
@@ -38,7 +45,8 @@
     "build:plugin": "esbuild plugin/src/code.ts --bundle --outfile=plugin/dist/code.js --format=iife --target=es2017",
     "dev": "tsx server/src/index.ts",
     "start": "node server/dist/index.js",
-    "typecheck": "tsc -p server/tsconfig.json --noEmit"
+    "typecheck": "tsc -p server/tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

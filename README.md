@@ -57,7 +57,7 @@ Source install only for now (no npm release yet).
 ### 1. Clone and build
 
 ```bash
-git clone https://github.com/hemilpatel/open-figma-mcp.git
+git clone https://github.com/Hemil4/open-figma-mcp.git
 cd open-figma-mcp
 npm install
 npm run build
