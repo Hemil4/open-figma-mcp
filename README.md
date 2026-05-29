@@ -52,36 +52,20 @@ A few minutes of AI experimentation burns through that. This project skips the R
 
 ## Installation
 
-Source install only for now (no npm release yet).
+Install via `npx` — no clone or build step required.
 
-### 1. Clone and build
-
-```bash
-git clone https://github.com/Hemil4/open-figma-mcp.git
-cd open-figma-mcp
-npm install
-npm run build
-```
-
-That produces:
-
-- `server/dist/index.js` — the MCP stdio server
-- `plugin/dist/code.js` — the bundled Figma plugin sandbox
-
-### 2. Configure your AI tool
-
-Replace `<repo>` with the absolute path to your clone (e.g. `/Users/you/code/open-figma-mcp`).
+### 1. Configure your AI tool
 
 **Claude Code CLI**
 
 ```bash
-claude mcp add open-figma-mcp -- node <repo>/server/dist/index.js
+claude mcp add -s user open-figma-mcp -- npx -y open-figma-mcp@latest
 ```
 
 **Codex CLI**
 
 ```bash
-codex mcp add open-figma-mcp -- node <repo>/server/dist/index.js
+codex mcp add open-figma-mcp -- npx -y open-figma-mcp@latest
 ```
 
 **`.mcp.json`** (Claude Desktop and other MCP-compatible tools)
@@ -90,8 +74,8 @@ codex mcp add open-figma-mcp -- node <repo>/server/dist/index.js
 {
   "mcpServers": {
     "open-figma-mcp": {
-      "command": "node",
-      "args": ["<repo>/server/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "open-figma-mcp@latest"]
     }
   }
 }
@@ -104,12 +88,26 @@ codex mcp add open-figma-mcp -- node <repo>/server/dist/index.js
   "servers": {
     "open-figma-mcp": {
       "type": "stdio",
-      "command": "node",
-      "args": ["<repo>/server/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "open-figma-mcp@latest"]
     }
   }
 }
 ```
+
+<details>
+<summary>Source install (alternative)</summary>
+
+```bash
+git clone https://github.com/Hemil4/open-figma-mcp.git
+cd open-figma-mcp
+npm install
+npm run build
+```
+
+Then point your AI tool config at `<repo>/server/dist/index.js` instead of the `npx` command.
+
+</details>
 
 > The MCP client launches the server. Do **not** run `npm start` or `npm run dev` at the same time — both processes would fight for port `18765`. Override the port with `FIGMA_MCP_PORT=<port>` if you need to relocate it.
 
