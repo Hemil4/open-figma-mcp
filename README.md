@@ -115,10 +115,13 @@ codex mcp add open-figma-mcp -- node <repo>/server/dist/index.js
 
 ### 3. Install the Figma plugin
 
-1. In Figma Desktop: **Plugins → Development → Import plugin from manifest…**
-2. Select `<repo>/plugin/manifest.json`
-3. Open any Figma file and run **Plugins → Development → Open Figma MCP**
-4. The plugin UI should show **Connected**
+1. Download [**plugin.zip**](https://github.com/Hemil4/open-figma-mcp/releases/latest/download/plugin.zip) from the [latest release](https://github.com/Hemil4/open-figma-mcp/releases/latest) and extract it
+2. In Figma Desktop: **Plugins → Development → Import plugin from manifest…**
+3. Pick the extracted `manifest.json`
+4. Open any Figma file and run **Plugins → Development → Open Figma MCP**
+5. The plugin UI should show **Connected**
+
+> Working from a clone instead? Step 1's path is `<repo>/plugin/manifest.json` — no download needed.
 
 If it shows **Disconnected**, your MCP server is not running yet. Start a session in your AI tool (which launches the server) and click **Reconnect**.
 
