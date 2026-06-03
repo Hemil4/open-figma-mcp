@@ -1,6 +1,7 @@
 node_modules/
 server/dist/
 plugin/dist/
+plugin.zip
 .DS_Store
 .open-figma-mcp/
 .figma-plugin-mcp/

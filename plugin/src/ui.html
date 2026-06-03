@@ -251,6 +251,11 @@
         socket = ws;
 
         ws.onopen = () => {
+          try {
+            ws.send(JSON.stringify({ type: "register", role: "plugin" }));
+          } catch (err) {
+            /* register failure is non-fatal; bridge owner will infer role */
+          }
           setConnected(true);
           parent.postMessage({ pluginMessage: { type: "ui-ready" } }, "*");
           fetch(healthEndpoint).catch(() => {});

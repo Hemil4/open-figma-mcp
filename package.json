@@ -1,6 +1,6 @@
 {
   "name": "open-figma-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Open-source Figma MCP server with full read/write access via a local plugin bridge — no Figma REST API, no rate limits.",
   "license": "MIT",
   "author": "Hemil Patel",

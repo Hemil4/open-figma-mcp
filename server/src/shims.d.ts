@@ -1,4 +1,5 @@
 declare const process: {
+  pid: number;
   env: Record<string, string | undefined>;
   cwd(): string;
   on(event: "SIGINT" | "SIGTERM", listener: () => void): void;
@@ -41,7 +42,13 @@ declare module "node:http" {
 
   export type Server = {
     listen(port: number, host: string, listener?: () => void): void;
+    listen(port: number, host: string): void;
     close(): void;
+    on(event: "error", listener: (err: Error & { code?: string }) => void): void;
+    on(event: "listening", listener: () => void): void;
+    once(event: "error", listener: (err: Error & { code?: string }) => void): void;
+    once(event: "listening", listener: () => void): void;
+    removeListener(event: "error" | "listening", listener: (...args: any[]) => void): void;
   };
 
   export function createServer(
@@ -50,13 +57,26 @@ declare module "node:http" {
 }
 
 declare module "ws" {
-  export const WebSocket: {
-    readonly OPEN: number;
-  };
+  export class WebSocket {
+    static readonly OPEN: number;
+    static readonly CONNECTING: number;
+    static readonly CLOSING: number;
+    static readonly CLOSED: number;
+    constructor(url: string);
+    readonly readyState: number;
+    send(data: string): void;
+    close(code?: number, reason?: string): void;
+    on(event: "open", listener: () => void): void;
+    on(event: "close", listener: (code?: number, reason?: Buffer) => void): void;
+    on(event: "error", listener: (err: Error) => void): void;
+    on(event: "message", listener: (raw: { toString(): string }) => void): void;
+    removeAllListeners(): void;
+  }
 
   export class WebSocketServer {
     constructor(options: { host?: string; port?: number; server?: unknown; maxPayload?: number });
     on(event: "connection", listener: (socket: WebSocketConnection) => void): void;
+    on(event: "error", listener: (err: Error) => void): void;
     close(): void;
   }
 

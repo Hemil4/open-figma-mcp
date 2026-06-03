@@ -6,14 +6,31 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { FigmaBridge } from "./bridge.js";
+import { BridgeClient } from "./bridge-client.js";
 import { normalizeNodeId, ScreenEntry, ScreenRegistryStore } from "./registry.js";
 
-const bridge = new FigmaBridge(Number(process.env.FIGMA_MCP_PORT || 18765));
+type Bridge = FigmaBridge | BridgeClient;
+
+const port = Number(process.env.FIGMA_MCP_PORT || 18765);
+const bridge: Bridge = await createBridge(port);
 const registryStore = new ScreenRegistryStore();
+
+async function createBridge(port: number): Promise<Bridge> {
+  try {
+    return await FigmaBridge.create(port);
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    if (err.code === "EADDRINUSE") {
+      console.error(`[open-figma-mcp] port ${port} in use; joining existing bridge as peer`);
+      return new BridgeClient(port);
+    }
+    throw err;
+  }
+}
 
 const server = new McpServer({
   name: "open-figma-mcp",
-  version: "0.1.0"
+  version: "0.1.1"
 });
 
 type Shape = Record<string, z.ZodTypeAny>;
