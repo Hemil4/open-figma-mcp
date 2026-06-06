@@ -44,6 +44,7 @@ export class BridgeClient {
       this.connectResolve = resolve;
       this.connectReject = reject;
     });
+    this.connectionPromise.catch(() => {});
     this.connect();
   }
 
@@ -120,21 +121,14 @@ export class BridgeClient {
     ws.on("message", (raw) => this.handleMessage(raw.toString()));
 
     ws.on("error", (err) => {
-      if (!this.connectedOnce) {
-        this.connectReject(err);
-      } else {
-        console.error("[open-figma-mcp] peer socket error:", err.message);
-      }
+      console.error("[open-figma-mcp] peer socket error:", err.message);
     });
 
     ws.on("close", () => {
-      const wasConnected = this.connectedOnce;
       this.socket = null;
       this.rejectAllPending("Bridge owner connection closed.");
-      if (wasConnected) {
-        console.error("[open-figma-mcp] peer disconnected from bridge owner; retrying in 1500ms");
-        this.reconnectTimer = setTimeout(() => this.connect(), 1500);
-      }
+      console.error("[open-figma-mcp] peer disconnected from bridge owner; retrying in 1500ms");
+      this.reconnectTimer = setTimeout(() => this.connect(), 1500);
     });
   }
 

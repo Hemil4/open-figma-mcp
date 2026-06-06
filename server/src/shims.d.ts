@@ -3,6 +3,8 @@ declare const process: {
   env: Record<string, string | undefined>;
   cwd(): string;
   on(event: "SIGINT" | "SIGTERM", listener: () => void): void;
+  on(event: "unhandledRejection", listener: (reason: unknown) => void): void;
+  on(event: "uncaughtException", listener: (err: Error) => void): void;
   exit(code?: number): never;
 };
 

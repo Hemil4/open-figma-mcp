@@ -414,5 +414,13 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[open-figma-mcp] unhandled rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[open-figma-mcp] uncaught exception:", err);
+});
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
