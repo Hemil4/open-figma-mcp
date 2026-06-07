@@ -3,9 +3,11 @@
 Open-source Figma MCP server with full read/write access via a local plugin bridge — no REST API, no rate limits. Works with Claude, Cursor, Codex, GitHub Copilot, and any MCP-compatible AI tool.
 
 <p>
+  <a href="https://www.npmjs.com/package/open-figma-mcp"><img src="https://img.shields.io/npm/v/open-figma-mcp?color=blue" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/open-figma-mcp"><img src="https://img.shields.io/npm/dw/open-figma-mcp?color=green" alt="npm downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/MCP-stdio-blue" alt="MCP stdio" />
-  <img src="https://img.shields.io/badge/Figma_Plugin-dev_manifest-purple" alt="Figma Plugin" />
+  <a href="https://github.com/Hemil4/open-figma-mcp/actions/workflows/publish.yml"><img src="https://img.shields.io/badge/Provenance-signed-brightgreen" alt="Provenance signed" /></a>
+  <a href="https://github.com/Hemil4/open-figma-mcp/stargazers"><img src="https://img.shields.io/github/stars/Hemil4/open-figma-mcp?style=social" alt="GitHub stars" /></a>
 </p>
 
 **Highlights**
