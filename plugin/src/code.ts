@@ -1089,7 +1089,8 @@ async function createVariable(params: Record<string, unknown>) {
 
 async function setVariableValue(params: Record<string, unknown>) {
   const variable = await getVariable(String(params.variableId || params.variableName || ""));
-  const collection = await getVariableCollection(String(params.collectionId || ""));
+  const collectionRef = params.collectionId || params.collectionName || (variable as any).variableCollectionId;
+  const collection = await getVariableCollection(String(collectionRef || ""));
   const modeId = String(params.modeId || params.modeName || collection.defaultModeId);
   const resolvedModeId = collection.modes.find((mode: any) => mode.modeId === modeId || mode.name === modeId)?.modeId || modeId;
   variable.setValueForMode(resolvedModeId, parseVariableValue(params.value, variable.resolvedType));

@@ -6,6 +6,8 @@ type BridgeStatus = {
   mode: "owner";
   host: string;
   port: number;
+  ownerConnected: boolean;
+  pluginConnected: boolean;
   peers: number;
   pendingRequests: number;
   lastPluginStatus: unknown;
@@ -112,11 +114,14 @@ export class FigmaBridge {
   }
 
   status(): BridgeStatus {
+    const pluginConnected = this.plugin?.readyState === WebSocket.OPEN;
     return {
-      connected: this.plugin?.readyState === WebSocket.OPEN,
+      connected: pluginConnected,
       mode: "owner",
       host: this.host,
       port: this.port,
+      ownerConnected: true,
+      pluginConnected,
       peers: this.peers.size,
       pendingRequests: this.ownPending.size + this.routedPending.size,
       lastPluginStatus: this.lastPluginStatus
@@ -205,6 +210,7 @@ export class FigmaBridge {
         console.error("[open-figma-mcp] Figma plugin disconnected");
         this.rejectAllOwnPending("Figma plugin disconnected.");
         this.rejectAllRoutedPending("Figma plugin disconnected.");
+        this.broadcastToPeers({ type: "plugin_disconnected" });
       } else if (role === "mcp_peer" && peerId) {
         this.detachPeer(peerId);
       }
@@ -218,6 +224,7 @@ export class FigmaBridge {
     }
     this.plugin = socket;
     console.error(`[open-figma-mcp] Figma plugin connected on ws://${this.host}:${this.port}/ws`);
+    this.broadcastToPeers({ type: "plugin_connected" });
   }
 
   private attachPeer(socket: WebSocketConnection): string {
@@ -225,6 +232,17 @@ export class FigmaBridge {
     const id = `peer-${Date.now()}-${this.peerCounter}`;
     this.peers.set(id, { id, socket, routedIds: new Set() });
     console.error(`[open-figma-mcp] MCP peer connected (${id}); peers=${this.peers.size}`);
+    if (this.plugin?.readyState === WebSocket.OPEN) {
+      try {
+        socket.send(JSON.stringify({ type: "plugin_connected" }));
+        if (this.lastPluginStatus) {
+          socket.send(JSON.stringify({ type: "plugin_status", payload: this.lastPluginStatus }));
+        }
+      } catch {
+      }
+    } else {
+      try { socket.send(JSON.stringify({ type: "plugin_disconnected" })); } catch {}
+    }
     return id;
   }
 
@@ -363,10 +381,10 @@ export class FigmaBridge {
   }
 
   private rejectAllRoutedPending(reason: string) {
-    for (const [, routed] of this.routedPending) {
+    for (const [internalId, routed] of this.routedPending) {
       clearTimeout(routed.timeout);
       const peer = this.peers.get(routed.peerId);
-      peer?.routedIds.delete(routed.originalId);
+      peer?.routedIds.delete(internalId);
       peer?.socket.send(
         JSON.stringify({ id: routed.originalId, ok: false, error: reason })
       );

@@ -1035,7 +1035,8 @@
   async function setVariableValue(params) {
     var _a;
     const variable = await getVariable(String(params.variableId || params.variableName || ""));
-    const collection = await getVariableCollection(String(params.collectionId || ""));
+    const collectionRef = params.collectionId || params.collectionName || variable.variableCollectionId;
+    const collection = await getVariableCollection(String(collectionRef || ""));
     const modeId = String(params.modeId || params.modeName || collection.defaultModeId);
     const resolvedModeId = ((_a = collection.modes.find((mode) => mode.modeId === modeId || mode.name === modeId)) == null ? void 0 : _a.modeId) || modeId;
     variable.setValueForMode(resolvedModeId, parseVariableValue(params.value, variable.resolvedType));

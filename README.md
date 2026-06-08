@@ -111,7 +111,7 @@ Then point your AI tool config at `<repo>/server/dist/index.js` instead of the `
 
 </details>
 
-> The MCP client launches the server. Do **not** run `npm start` or `npm run dev` at the same time — both processes would fight for port `18765`. Override the port with `FIGMA_MCP_PORT=<port>` if you need to relocate it.
+> The MCP client launches the server. Since v0.1.1, multiple MCP server processes co-exist: the **first** to bind `127.0.0.1:18765` becomes the bridge owner, and additional servers join as peers and route their tool calls through the owner. Run Claude, Codex, Cursor side-by-side against one Figma plugin. Override the port via `FIGMA_MCP_PORT=<port>` if you need to relocate it (all servers must agree on the same port).
 
 ### 3. Install the Figma plugin
 

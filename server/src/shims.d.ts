@@ -27,6 +27,7 @@ declare module "node:path" {
     isAbsolute(value: string): boolean;
     join(...parts: string[]): string;
     resolve(...parts: string[]): string;
+    sep: string;
   };
   export default path;
 }

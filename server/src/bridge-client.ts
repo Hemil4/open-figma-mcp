@@ -5,6 +5,8 @@ type ClientStatus = {
   mode: "peer";
   host: string;
   port: number;
+  ownerConnected: boolean;
+  pluginConnected: boolean;
   pendingRequests: number;
   lastPluginStatus: unknown;
 };
@@ -30,11 +32,13 @@ export class BridgeClient {
   private readonly pending = new Map<string, PendingRequest>();
   private counter = 0;
   private connectedOnce = false;
+  private pluginAlive = false;
   private lastPluginStatus: unknown = null;
   private connectionPromise: Promise<void>;
   private connectResolve!: () => void;
   private connectReject!: (err: Error) => void;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private disposed = false;
 
   constructor(
     private readonly port: number,
@@ -49,11 +53,14 @@ export class BridgeClient {
   }
 
   status(): ClientStatus {
+    const ownerConnected = this.socket?.readyState === WebSocket.OPEN;
     return {
-      connected: this.socket?.readyState === WebSocket.OPEN,
+      connected: ownerConnected && this.pluginAlive,
       mode: "peer",
       host: this.host,
       port: this.port,
+      ownerConnected,
+      pluginConnected: this.pluginAlive,
       pendingRequests: this.pending.size,
       lastPluginStatus: this.lastPluginStatus
     };
@@ -87,6 +94,7 @@ export class BridgeClient {
   }
 
   close() {
+    this.disposed = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -100,6 +108,7 @@ export class BridgeClient {
   }
 
   private connect() {
+    if (this.disposed) return;
     const ws = new WebSocket(`ws://${this.host}:${this.port}/ws`);
     this.socket = ws;
 
@@ -126,7 +135,9 @@ export class BridgeClient {
 
     ws.on("close", () => {
       this.socket = null;
+      this.pluginAlive = false;
       this.rejectAllPending("Bridge owner connection closed.");
+      if (this.disposed) return;
       console.error("[open-figma-mcp] peer disconnected from bridge owner; retrying in 1500ms");
       this.reconnectTimer = setTimeout(() => this.connect(), 1500);
     });
@@ -147,6 +158,17 @@ export class BridgeClient {
 
     if (message.type === "plugin_status") {
       this.lastPluginStatus = message.payload ?? message;
+      this.pluginAlive = true;
+      return;
+    }
+
+    if (message.type === "plugin_connected") {
+      this.pluginAlive = true;
+      return;
+    }
+
+    if (message.type === "plugin_disconnected") {
+      this.pluginAlive = false;
       return;
     }
 

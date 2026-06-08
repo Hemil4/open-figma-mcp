@@ -30,7 +30,7 @@ async function createBridge(port: number): Promise<Bridge> {
 
 const server = new McpServer({
   name: "open-figma-mcp",
-  version: "0.1.1"
+  version: "0.1.2"
 });
 
 type Shape = Record<string, z.ZodTypeAny>;
@@ -242,7 +242,7 @@ const bridgeTools: ToolSpec[] = [
 
   { name: "figma_get_screenshot", command: "get_screenshot", description: "Export one or more nodes as PNG, JPG, SVG, or PDF base64.", inputSchema: { ...nodeSelector, format: z.enum(["PNG", "JPG", "SVG", "PDF"]).optional(), scale: z.number().optional() }, screenTarget: "node", timeoutMs: 120000 },
   { name: "figma_generate_diagram", command: "generate_diagram", description: "Create a structured diagram frame with boxes and connector lines.", inputSchema: { ...parentSelector, name: z.string().optional(), x: z.number().optional(), y: z.number().optional(), width: z.number().optional(), height: z.number().optional(), backgroundColor: color, nodes: z.array(diagramNode).min(1), edges: z.array(diagramEdge).optional() }, screenTarget: "parent", timeoutMs: 120000 },
-  { name: "figma_generate_screen", command: "generate_screen", description: "Create a structured app screen from JSON elements.", inputSchema: { ...parentSelector, name: z.string(), width: z.number().optional(), height: z.number().optional(), backgroundColor: color, elements: z.array(screenElement).min(1) }, screenTarget: "parent", timeoutMs: 120000 }
+  { name: "figma_generate_screen", command: "generate_screen", description: "Create a structured app screen from JSON elements.", inputSchema: { ...parentSelector, name: z.string(), x: z.number().optional(), y: z.number().optional(), width: z.number().optional(), height: z.number().optional(), backgroundColor: color, elements: z.array(screenElement).min(1) }, screenTarget: "parent", timeoutMs: 120000 }
 ];
 
 for (const spec of bridgeTools) registerBridgeTool(spec);
@@ -397,7 +397,18 @@ async function writeBase64File(base64: string, outputPath: string) {
 }
 
 function resolveOutputPath(outputPath: string) {
-  return path.isAbsolute(outputPath) ? outputPath : path.resolve(process.cwd(), outputPath);
+  const allowBase = process.env.FIGMA_MCP_EXPORT_DIR
+    ? path.resolve(process.env.FIGMA_MCP_EXPORT_DIR)
+    : path.resolve(process.cwd());
+  const resolved = path.isAbsolute(outputPath) ? path.resolve(outputPath) : path.resolve(allowBase, outputPath);
+  const allowAny = process.env.FIGMA_MCP_ALLOW_ANY_PATH === "1";
+  const insideAllowBase = resolved === allowBase || resolved.startsWith(allowBase + path.sep);
+  if (!allowAny && !insideAllowBase) {
+    throw new Error(
+      `Refusing to write outside the allowed export directory ("${allowBase}"). Set FIGMA_MCP_EXPORT_DIR to a parent directory, or set FIGMA_MCP_ALLOW_ANY_PATH=1 to disable the check.`
+    );
+  }
+  return resolved;
 }
 
 function ensureExtension(outputPath: string, extension: string) {
