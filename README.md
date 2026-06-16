@@ -54,9 +54,23 @@ A few minutes of AI experimentation burns through that. This project skips the R
 
 ## Installation
 
-Install via `npx` — no clone or build step required.
+Three steps: install the Figma plugin, configure your AI tool, run it. Install via `npx` — no clone or build required.
 
-### 1. Configure your AI tool
+**Prereqs:** Node 18+ (Node 22+ recommended), Figma Desktop (not the browser app — the plugin must run locally).
+
+### Step 1 — Install the Figma plugin
+
+1. Download [**plugin.zip**](https://github.com/Hemil4/open-figma-mcp/releases/latest/download/plugin.zip) from the [latest release](https://github.com/Hemil4/open-figma-mcp/releases/latest).
+2. Extract the zip anywhere (the folder must stay on disk — Figma reads `manifest.json` from this location).
+3. Open Figma Desktop → any file → **Plugins → Development → Import plugin from manifest…**
+4. Select the extracted `manifest.json`.
+5. The plugin is now installed. You don't need to run it yet — Step 3 starts it.
+
+> Source install instead? Use `<repo>/plugin/manifest.json` after running `npm install && npm run build`.
+
+### Step 2 — Configure your AI tool
+
+Pick the snippet for your tool. All four use the same `npx` command under the hood.
 
 **Claude Code CLI**
 
@@ -70,7 +84,7 @@ claude mcp add -s user open-figma-mcp -- npx -y open-figma-mcp@latest
 codex mcp add open-figma-mcp -- npx -y open-figma-mcp@latest
 ```
 
-**`.mcp.json`** (Claude Desktop and other MCP-compatible tools)
+**`.mcp.json`** (Claude Desktop, other MCP-compatible clients)
 
 ```json
 {
@@ -83,7 +97,7 @@ codex mcp add open-figma-mcp -- npx -y open-figma-mcp@latest
 }
 ```
 
-**`.vscode/mcp.json`** (Cursor / VS Code / GitHub Copilot)
+**`.vscode/mcp.json`** (Cursor, VS Code, GitHub Copilot)
 
 ```json
 {
@@ -107,23 +121,50 @@ npm install
 npm run build
 ```
 
-Then point your AI tool config at `<repo>/server/dist/index.js` instead of the `npx` command.
+Replace the `npx` command in any snippet above with the absolute path to `<repo>/server/dist/index.js` — e.g.:
+
+```json
+{
+  "mcpServers": {
+    "open-figma-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/open-figma-mcp/server/dist/index.js"]
+    }
+  }
+}
+```
 
 </details>
 
-> The MCP client launches the server. Since v0.1.1, multiple MCP server processes co-exist: the **first** to bind `127.0.0.1:18765` becomes the bridge owner, and additional servers join as peers and route their tool calls through the owner. Run Claude, Codex, Cursor side-by-side against one Figma plugin. Override the port via `FIGMA_MCP_PORT=<port>` if you need to relocate it (all servers must agree on the same port).
+### Step 3 — Run it
 
-### 3. Install the Figma plugin
+1. Start a session in your AI tool (Claude/Codex/Cursor/Copilot). The tool launches the MCP server automatically.
+2. In Figma Desktop, open the file you want to edit → **Plugins → Development → Open Figma MCP**.
+3. The plugin window opens and shows **Connected** when the WebSocket bridge handshake succeeds.
+4. Ask your AI: *"List my Figma pages"* — if it returns a list, the bridge works.
 
-1. Download [**plugin.zip**](https://github.com/Hemil4/open-figma-mcp/releases/latest/download/plugin.zip) from the [latest release](https://github.com/Hemil4/open-figma-mcp/releases/latest) and extract it
-2. In Figma Desktop: **Plugins → Development → Import plugin from manifest…**
-3. Pick the extracted `manifest.json`
-4. Open any Figma file and run **Plugins → Development → Open Figma MCP**
-5. The plugin UI should show **Connected**
+That's it. You can now ask the AI to create frames, edit text, manage variables, export — anything in the [tool list below](#available-tools).
 
-> Working from a clone instead? Step 1's path is `<repo>/plugin/manifest.json` — no download needed.
+### Verify it's working
 
-If it shows **Disconnected**, your MCP server is not running yet. Start a session in your AI tool (which launches the server) and click **Reconnect**.
+```bash
+curl http://127.0.0.1:18765/health
+```
+
+Returns `{"ok":true}` when the bridge is up. If `connection refused`, no MCP server is running (start a session in your AI tool).
+
+### Common issues
+
+| Symptom | Fix |
+|---------|-----|
+| Plugin shows **Disconnected** | MCP server is not running. Start a session in your AI tool, then click **Reconnect** in the plugin UI. |
+| `Address already in use` on port 18765 | Another MCP session already owns the bridge. New sessions auto-join as peers (since v0.1.1) — this is fine, all clients share the one plugin. |
+| Want to run on a different port | Set `FIGMA_MCP_PORT=<port>` in the MCP client config's `env`. All servers must use the same port. |
+| Plugin window closes / file switches | The plugin only stays connected while its window is open. Re-run **Open Figma MCP** in the new file. |
+
+### Multi-client (Claude + Codex + Cursor at the same time)
+
+Since v0.1.1, multiple MCP clients can drive the same Figma file. The **first** server to bind `127.0.0.1:18765` owns the bridge; later servers join as peers and route their tool calls through the owner. Run all of them side-by-side against one plugin connection — no setup needed.
 
 ---
 
@@ -345,22 +386,11 @@ Adding a tool requires two edits in lockstep:
 
 Forgetting either half produces an unhandled-command error at the plugin side.
 
-See [`CLAUDE.md`](CLAUDE.md) for the architecture deep-dive.
-
----
-
-## Related Projects
-
-- [vkhanhqui/figma-mcp-go](https://github.com/vkhanhqui/figma-mcp-go) — sibling project, Go-based, npm-distributed
-- [magic-spells/figma-mcp-bridge](https://github.com/magic-spells/figma-mcp-bridge)
-- [grab/cursor-talk-to-figma-mcp](https://github.com/grab/cursor-talk-to-figma-mcp)
-- [gethopp/figma-mcp-bridge](https://github.com/gethopp/figma-mcp-bridge)
-
 ---
 
 ## Contributing
 
-Issues and PRs welcome. See [`CLAUDE.md`](CLAUDE.md) for the architecture map and `bridgeTools` / `handleCommand` switch invariant.
+Issues and PRs welcome. The architecture map lives at the top of `server/src/index.ts` (bridge wiring + `bridgeTools` array) and `plugin/src/code.ts` (the `handleCommand` switch). Keep those two in lockstep when adding tools.
 
 ## License
 
