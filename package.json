@@ -45,6 +45,7 @@
     "build:plugin": "esbuild plugin/src/code.ts --bundle --outfile=plugin/dist/code.js --format=iife --target=es2017",
     "dev": "tsx server/src/index.ts",
     "start": "node server/dist/index.js",
+    "test": "npm run build:server && node --test test/*.test.js",
     "typecheck": "tsc -p server/tsconfig.json --noEmit",
     "prepublishOnly": "npm run build"
   },
