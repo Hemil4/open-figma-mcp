@@ -2,6 +2,9 @@ declare const process: {
   pid: number;
   env: Record<string, string | undefined>;
   cwd(): string;
+  stdin: {
+    once(event: "end" | "close", listener: () => void): void;
+  };
   on(event: "SIGINT" | "SIGTERM", listener: () => void): void;
   on(event: "unhandledRejection", listener: (reason: unknown) => void): void;
   on(event: "uncaughtException", listener: (err: Error) => void): void;

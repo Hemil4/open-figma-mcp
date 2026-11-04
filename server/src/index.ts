@@ -415,15 +415,22 @@ function ensureExtension(outputPath: string, extension: string) {
   return path.extname(outputPath) ? outputPath : `${outputPath}.${extension}`;
 }
 
-process.on("SIGINT", () => {
-  bridge.close();
-  process.exit(0);
-});
+let shuttingDown = false;
 
-process.on("SIGTERM", () => {
-  bridge.close();
-  process.exit(0);
-});
+function shutdown(exitCode: number) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try {
+    bridge.close();
+  } catch {
+  }
+  process.exit(exitCode);
+}
+
+process.on("SIGINT", () => shutdown(0));
+process.on("SIGTERM", () => shutdown(0));
+process.stdin.once("end", () => shutdown(0));
+process.stdin.once("close", () => shutdown(0));
 
 process.on("unhandledRejection", (reason) => {
   console.error("[open-figma-mcp] unhandled rejection:", reason);
@@ -431,6 +438,7 @@ process.on("unhandledRejection", (reason) => {
 
 process.on("uncaughtException", (err) => {
   console.error("[open-figma-mcp] uncaught exception:", err);
+  shutdown(1);
 });
 
 const transport = new StdioServerTransport();
